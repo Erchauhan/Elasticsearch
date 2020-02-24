@@ -1,25 +1,45 @@
-data "template_file" "master_userdata_script" {
-  template = "${file("${path.module}/../templates/user_data.sh")}"
+resource "azurerm_lb" "elasticsearchlb" {
+  name                = "es-${var.es_cluster}-load-balancer"
+  location            = "${var.azure_location}"
+  resource_group_name = "${azurerm_resource_group.elasticsearch.name}"
 
-  vars {
-    cloud_provider          = "azure"
-    volume_name             = ""
-    elasticsearch_data_dir  = "/var/lib/elasticsearch"
-    elasticsearch_logs_dir  = "${var.elasticsearch_logs_dir}"
-    heap_size               = "${var.master_heap_size}"
-    es_cluster              = "${var.es_cluster}"
-    es_environment          = "${var.environment}-${var.es_cluster}"
-    security_groups         = ""
-    availability_zones      = ""
-    minimum_master_nodes    = "${format("%d", var.masters_count / 2 + 1)}"
-    master                  = "true"
-    data                    = "false"
-    http_enabled            = "false"
-    security_enabled        = "${var.security_enabled}"
-    monitoring_enabled      = "${var.monitoring_enabled}"
-    client_user             = ""
-    client_pwd              = ""
+   frontend_ip_configuration {
+    name                          = "es-${var.es_cluster}-es-PrivateIP"
+    subnet_id                     = "${azurerm_subnet.elasticsearch_subnet.id}"
+    private_ip_address            = "10.1.0.10"
+    private_ip_address_allocation = "Static"
   }
+}
+
+resource "azurerm_lb_backend_address_pool" "es-lb-backend" {
+  resource_group_name   = "${azurerm_resource_group.elasticsearch.name}"
+  loadbalancer_id       = "${azurerm_lb.elasticsearchlb.id}"
+  name                  = "es-${var.es_cluster}-BackEndAddressPoolbastion"
+}
+
+resource "azurerm_lb_probe" "es-lb-probe" {
+  resource_group_name    = "${azurerm_resource_group.elasticsearch.name}"
+  loadbalancer_id        = "${azurerm_lb.elasticsearchlb.id}"
+  name                   = "es-${var.es_cluster}-es-Probe"
+  protocol               = "tcp"
+  port                   =  80
+  interval_in_seconds    =  5
+  number_of_probes       =  2
+}
+
+resource "azurerm_lb_rule" "es-lbrule" {
+  resource_group_name            = "${azurerm_resource_group.elasticsearch.name}"
+  loadbalancer_id                = "${azurerm_lb.elasticsearchlb.id}"
+  name                           = "es-${var.es_cluster}-es-lb-rules"
+  protocol                       = "tcp"
+  frontend_port                  =  80
+  backend_port                   =  80
+  frontend_ip_configuration_name = "es-${var.es_cluster}-es-PrivateIP"
+  enable_floating_ip             = false
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.es-lb-backend.id}"
+  idle_timeout_in_minutes        = 5
+  probe_id                       = "${azurerm_lb_probe.es-lb-probe.id}"
+  depends_on                     = ["azurerm_lb_probe.es-lb-probe"]
 }
 
 resource "azurerm_virtual_machine_scale_set" "master-nodes" {
@@ -28,7 +48,7 @@ resource "azurerm_virtual_machine_scale_set" "master-nodes" {
   name = "es-${var.es_cluster}-master-nodes"
   resource_group_name = "${azurerm_resource_group.elasticsearch.name}"
   location = "${var.azure_location}"
-  "sku" {
+  sku {
     name = "${var.master_instance_type}"
     tier = "Standard"
     capacity = "${var.masters_count}"
@@ -36,19 +56,19 @@ resource "azurerm_virtual_machine_scale_set" "master-nodes" {
   upgrade_policy_mode = "Manual"
   overprovision = false
 
-  "os_profile" {
+  os_profile {
     computer_name_prefix = "${var.es_cluster}-master"
     admin_username = "ubuntu"
     admin_password = "${random_string.vm-login-password.result}"
-    custom_data = "${data.template_file.master_userdata_script.rendered}"
   }
 
-  "network_profile" {
+  network_profile {
     name = "es-${var.es_cluster}-net-profile"
     primary = true
 
-    "ip_configuration" {
+    ip_configuration {
       name = "es-${var.es_cluster}-ip-profile"
+      primary= true
       subnet_id = "${azurerm_subnet.elasticsearch_subnet.id}"
     }
   }
@@ -57,7 +77,7 @@ resource "azurerm_virtual_machine_scale_set" "master-nodes" {
     id = "${data.azurerm_image.elasticsearch.id}"
   }
 
-  "storage_profile_os_disk" {
+  storage_profile_os_disk {
     caching        = "ReadWrite"
     create_option  = "FromImage"
     managed_disk_type = "Standard_LRS"
