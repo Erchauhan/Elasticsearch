@@ -3,21 +3,6 @@ variable "azure_location" {
   default = "East US"
 }
 
-variable "azure_client_id" {
-  type = "string"
-}
-
-variable "azure_client_secret" {
-  type = "string"
-}
-
-variable "azure_subscription_id" {
-  type = "string"
-}
-
-variable "azure_tenant_id" {
-  type = "string"
-}
 
 variable "es_cluster" {
   description = "Name of the elasticsearch cluster, used in node discovery"
@@ -43,10 +28,6 @@ variable "master_instance_type" {
   default = "Standard_A2_v2"
 }
 
-variable "client_instance_type" {
-  type = "string"
-  default = "Standard_A2_v2"
-}
 
 variable "elasticsearch_volume_size" {
   type = "string"
@@ -88,9 +69,6 @@ variable "datas_count" {
   default = "1"
 }
 
-variable "clients_count" {
-  default = "1"
-}
 
 # whether or not to enable x-pack security on the cluster
 variable "security_enabled" {
@@ -100,9 +78,4 @@ variable "security_enabled" {
 # whether or not to enable x-pack monitoring on the cluster
 variable "monitoring_enabled" {
   default = "true"
-}
-
-# client nodes have nginx installed on them, these credentials are used for basic auth
-variable "client_user" {
-  default = "exampleuser"
 }
