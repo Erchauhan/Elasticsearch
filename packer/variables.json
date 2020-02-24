@@ -1,19 +1,14 @@
 {
-  "elasticsearch_version": "",
+"elasticsearch_version": "5.6.2",
+"cloud_provider": "azure",
 
-  "aws_region": "us-east-1",
-  "aws_az": "us-east-1d",
 
-  "azure_client_id": "",
-  "azure_client_secret": "",
-  "azure_subscription_id": "",
-  "azure_tenant_id": "",
+"azure_client_id": "0ef33558-92ce-4df1-b8e2-dbbd7452eccc",
+"azure_client_secret": "be94735a-7c6c-4547-adf0-6233f2d44ab0",
+"azure_subscription_id": "4358528d-47e1-45f1-a7b8-59a61ea9945b",
+"azure_tenant_id": "8b87af7d-8647-4dc7-8df4-5f69a2011bb5",
 
-  "gcp_zone": "us-central1-a",
-  "gcp_project_id": "elasticsearch",
-  "gcp_account_file": ".gcp_account.json",
-
-  "azure_location": "East US",
-  "azure_resource_group_name": "packer-elasticsearch-images",
-  "azure_elasticsearch_image_name": ""
+"azure_location": "East US",
+"azure_resource_group_name": "packer-elasticsearch-images",
+"azure_elasticsearch_image_name": "elasticsearch-image"
 }
